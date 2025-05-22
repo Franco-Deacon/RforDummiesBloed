@@ -1,0 +1,115 @@
+#Q1 Use the Iris dataset and plot hsitograms of Sepal length, Sepal width,
+# lenth and petal with in a single plot
+
+library(tidyverse)
+library(MASS)
+library(Ecdat)
+library(ggplot2)
+
+data = iris[, 1:4] # exclude species column
+
+#data_long <- pivot_longer(names_to = "variable" , values_to = "value")
+data_long = gather(data,  key = "variable", value = "value")
+
+ggplot(data_long, aes(x = value)) +
+  geom_histogram(binwidth = 0.3, color = "black", fill = "lightblue") +
+  facet_wrap(~ variable, nrow = 1) + 
+  labs(x = "Value", 
+       y = "Freqeuncy", 
+       title = "Histograms of Iris Measurements") +
+  theme_classic()
+
+#Q5 Plot UScrime data, plot crime rates over income and education
+
+data(UScrime)
+str(data)
+
+df <- UScrime[, c("Ed", "U1", "U2", "GDP")]
+df$id <- 1:nrow(df)
+
+df_long = pivot_longer(df, 
+                       cols = -id, 
+                       names_to = "Variable",
+                       values_to = "Value"
+                       )
+
+ggplot(df_long, aes(x = id, y = Value, color = Variable)) +
+  geom_line() +
+  labs(title = "Crime-related Variables by Index", x = "Index", y = "Value") +
+  theme_classic()
+
+#Q6 Use the mcycle dataset and plot head acceleration curves 
+
+data(mcycle)
+# Simulate splitting data bky speed levels (quantiles)
+
+mcycle$Group = cut(mcycle$times, breaks = 4)
+
+ggplot(mcycle, aes(x = times, y = accel, color = Group)) +
+  geom_line() +
+  labs( "Motorcycle Acceleration by Time", x = "Time (ms)", y = "Acceleration") +
+  theme_minimal()
+
+#Q8 Use the wages dataset and plot wages by experience and education
+data(Wages)
+str(Wages)
+
+# group data by years of education and calculate average wage by experience 
+avg_wage = Wages %>%
+  group_by(ed, exp) %>%
+  summarise(mean_wage = mean(lwage, na.rm = TRUE), .groups = "drop")
+
+# Plot multiple lines: one line per education level 
+ggplot(avg_wage, aes(x = exp, y = mean_wage, color = as.factor(ed))) +   
+  geom_line(size = 1) +  
+  labs(title = "Average Wage by Experience and Education Level",
+       x = "Years of Experience", y = "Average Wage",        
+       color = "Education (years)") +   
+  theme_minimal() 
+
+#Q9 Use the BudgetFood dataset, and plot totla food expenditures by income group
+data("Caschool")
+str(Caschool)
+
+# Create test score groups (quartiles)
+Caschool$score_group = ntile(Caschool$testscr, 4)
+
+# Group by score_group and compute averages
+avg_stats = Caschool %>%
+  group_by(score_group) %>%
+  summarise(
+    STR = mean(str, na.rm = TRUE), # Student-Teacher Ratio
+    Spending = mean(expnstu, na.rm = TRUE), # Spending per student
+    Income = mean(avginc, na.rm = TRUE), # Averag income]
+    .groups = "drop"
+  )
+
+# Reshape to Long format for format for plotting
+avg_stats_long = pivot_longer(avg_stats, cols = c(STR, Spending, Income),
+                              names_to = "Variable", values_to = "MeanValue")
+
+ggplot(avg_stats_long, aes(x = score_group, y = MeanValue, color = Variable)) +
+  geom_line(linewidth = 1.2) +   
+  geom_point(size = 3) +   
+  scale_x_continuous(breaks = 1:4, labels = c("Q1", "Q2", "Q3", "Q4")) +   
+  labs(title = "School Characteristics by Test Score Group (Caschool)",        
+    x = "Test Score Group (Quartiles)",       
+    y = "Average Value") +   
+  theme_minimal()
+
+#Q11 Plot the density of the Average income from the Caschool dataset
+
+# Use 'avginc' (average district income) 
+data1 = data.frame(x = Caschool$avginc) 
+
+#Density estimate
+density_data = density(data1$x, na.rm = TRUE)
+data2 = data.frame(ex = density_data$x, prob1 = density_data$y)
+
+# Plot histogram + density line
+combined_plot2 = ggplot() + 
+  geom_histogram(data = data1, aes(x = x, y = after_stat(density)), binwidth = 2,
+                 fill = "orange", color = "black") +
+  geom_line(data = data2, aes(x = ex, y = prob1), color = "darkgreen", linewidth = 1.5) +
+  theme_minimal()
+combined_plot2
